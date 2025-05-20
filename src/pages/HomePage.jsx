@@ -75,7 +75,7 @@ export default userSlice.reducer;`,
   {
     id: '2',
     title: 'Advanced TypeScript Patterns for React Developers',
-    excerpt: 'Discover how to leverage TypeScript's type system to build more robust React applications with better developer experience and fewer runtime errors.',
+    excerpt: 'Discover how to leverage TypeScripts type system to build more robust React applications with better developer experience and fewer runtime errors.',
     author: {
       id: '102',
       name: 'Michael Chen',
