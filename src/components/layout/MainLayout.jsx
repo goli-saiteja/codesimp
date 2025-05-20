@@ -5,7 +5,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { 
   Search, Bell, BookOpen, Bookmark, User, Settings, 
   Home, Code, Award, Terminal, Hash, Zap, Users, Coffee,
-  Trending, Clock, BarChart2, GitHub, Database, Layers, 
+  TrendingUp, Clock, BarChart2, Github, Database, Layers, 
   HelpCircle, LogOut, Mail
 } from 'lucide-react';
 import SmartNavigation from './SmartNavigation';
@@ -93,7 +93,7 @@ const MainLayout = () => {
   ];
   
   const discoverNavItems = [
-    { name: 'Popular', icon: <Trending size={20} />, path: '/popular' },
+    { name: 'Popular', icon: <TrendingUp size={20} />, path: '/popular' },
     { name: 'Recent', icon: <Clock size={20} />, path: '/recent' },
     { name: 'Topics', icon: <BookOpen size={20} />, path: '/topics' },
     { name: 'Authors', icon: <Users size={20} />, path: '/authors' },

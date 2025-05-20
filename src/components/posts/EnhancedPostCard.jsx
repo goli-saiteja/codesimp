@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { addBookmark, removeBookmark } from '../../store/slices/postsSlice';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { a11yDark, a11yLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { a11yDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import useCodeMetrics from '../../hooks/useCodeMetrics';
@@ -271,7 +271,7 @@ const EnhancedPostCard = ({
                       
                       <SyntaxHighlighter
                         language={post.language?.toLowerCase() || 'javascript'}
-                        style={darkMode ? a11yDark : a11yLight}
+                        style={darkMode ? a11yDark : oneLight}
                         customStyle={{ margin: 0, borderRadius: 0, maxHeight: 200 }}
                         wrapLines
                         lineProps={{ style: { wordBreak: 'break-all', whiteSpace: 'pre-wrap' } }}

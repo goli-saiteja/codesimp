@@ -1284,22 +1284,22 @@ const AICodeReviewer = ({
   );
 };
 
-// Helper component for Lightning icon
-const Lightning = ({ size = 24, className = '' }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
-  </svg>
-);
+// // Helper component for Lightning icon
+// const Lightning = ({ size = 24, className = '' }) => (
+//   <svg
+//     xmlns="http://www.w3.org/2000/svg"
+//     width={size}
+//     height={size}
+//     viewBox="0 0 24 24"
+//     fill="none"
+//     stroke="currentColor"
+//     strokeWidth="2"
+//     strokeLinecap="round"
+//     strokeLinejoin="round"
+//     className={className}
+//   >
+//     <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+//   </svg>
+// );
 
 export default AICodeReviewer;

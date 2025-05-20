@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { 
   Search, X, Filter, Clock, Star, Code, Zap, 
-  BookOpen, Trending, Tag, Command, Settings, AlertCircle
+  BookOpen, TrendingUp, Tag, Command, Settings, AlertCircle
 } from 'lucide-react';
 import { setSearchQuery, setSearchFilters, clearSearch } from '../../store/slices/searchSlice';
 import { useSearchQuery } from '../../services/apiService';
@@ -564,7 +564,7 @@ const AIAssistedSearch = ({ fullWidth = false, showTrending = true, className = 
           {showTrending && !query && (
             <div className="p-2 border-t border-gray-200 dark:border-gray-700">
               <div className="flex items-center space-x-1 px-2 py-1 text-xs text-gray-500 dark:text-gray-400">
-                <Trending size={14} />
+                <TrendingUp size={14} />
                 <span>Trending Searches</span>
               </div>
               <ul>
@@ -580,7 +580,7 @@ const AIAssistedSearch = ({ fullWidth = false, showTrending = true, className = 
                       className="flex items-center px-3 py-2 w-full text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                       onClick={() => handleSearch(trend)}
                     >
-                      <Trending size={16} className="mr-2 text-gray-400" />
+                      <TrendingUp size={16} className="mr-2 text-gray-400" />
                       <span className="text-sm">{trend}</span>
                     </button>
                   </li>

@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  Code, GitHub, Twitter, Linkedin, Mail, Coffee, 
+  Code, Github, Twitter, Linkedin, Mail, Coffee, 
   Heart, ExternalLink, BookOpen, User, Terminal, 
   Shield, FileText, HelpCircle
 } from 'lucide-react';
@@ -39,7 +39,7 @@ const Footer = () => {
   };
   
   const socialLinks = [
-    { name: 'GitHub', icon: <GitHub size={18} />, url: 'https://github.com/codesource' },
+    { name: 'GitHub', icon: <Github size={18} />, url: 'https://github.com/codesource' },
     { name: 'Twitter', icon: <Twitter size={18} />, url: 'https://twitter.com/codesource' },
     { name: 'LinkedIn', icon: <Linkedin size={18} />, url: 'https://linkedin.com/company/codesource' },
     { name: 'Email', icon: <Mail size={18} />, url: 'mailto:contact@codesource.com' },

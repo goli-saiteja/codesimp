@@ -6,7 +6,7 @@ import {
   User, Settings, Calendar, MapPin, Link as LinkIcon, Twitter, 
   GitHub, Briefcase, Award, Coffee, Edit, UserPlus, UserMinus, 
   Code, BookOpen, Hash, Eye, BarChart2, Heart, Hexagon, ZapOff,
-  Terminal, Cpu, Database, Server, Globe, Layers, PieChart, Star
+  Terminal, Cpu, Database, Server, Globe, Layers, Star
 } from 'lucide-react';
 import { followUser, unfollowUser } from '../../store/slices/userSlice';
 import { useGetUserProfileQuery, useGetUserAnalyticsQuery } from '../../services/apiService';

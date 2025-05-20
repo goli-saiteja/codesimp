@@ -394,7 +394,7 @@ const MOCK_COMMENTS = [
           name: 'Sarah Johnson',
           avatar: 'https://randomuser.me/api/portraits/women/41.jpg',
         },
-        content: 'Great question, James! It really depends on the scale and requirements of your project. For smaller applications, Context API + useReducer might be sufficient. For larger applications with complex state and many contributors, I still prefer Redux Toolkit for its structured approach and excellent dev tools. MobX is also powerful but follows a different paradigm. I'll consider writing a comparison article soon!',
+        content: 'Great question, James! It really depends on the scale and requirements of your project. For smaller applications, Context API + useReducer might be sufficient. For larger applications with complex state and many contributors, I still prefer Redux Toolkit for its structured approach and excellent dev tools. MobX is also powerful but follows a different paradigm. I will consider writing a comparison article soon!',
         publishedAt: '2025-05-14T13:20:00Z',
         likes: 15,
       },

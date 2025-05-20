@@ -6,7 +6,7 @@ import {
   Menu, X, Sun, Moon, Bell, Search, User, ChevronDown, 
   Code, BookOpen, Hash, Star, Cpu, Coffee, Lightbulb,
   Rss, HelpCircle, Zap, Settings, LogOut, Bookmark,
-  Inbox, Maximize2, PlusCircle, Command, GitHub
+  Inbox, Maximize2, PlusCircle, Command, Github
 } from 'lucide-react';
 import { toggleDarkMode, toggleCommandPalette } from '../../store/slices/uiSlice';
 import { logoutUser } from '../../store/slices/authSlice';
@@ -740,7 +740,7 @@ const SmartNavigation = () => {
         <div className="fixed bottom-4 right-4 z-20 max-w-sm bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-start">
             <div className="flex-shrink-0">
-              <GitHub size={24} className="text-gray-700 dark:text-gray-300" />
+              <Github size={24} className="text-gray-700 dark:text-gray-300" />
             </div>
             <div className="ml-3">
               <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">

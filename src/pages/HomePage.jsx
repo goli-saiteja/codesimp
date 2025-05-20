@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { 
-  Terminal, Code, Book, ArrowRight, Star, Clock, Lightning, 
-  Tag, Cpu, Search, Zap, Share2, Award, Trending, Gift,
+  Terminal, Code, Book, ArrowRight, Star, Clock, 
+  Tag, Cpu, Search, Zap, Share2, Award, TrendingUp, Gift,
   Users, BookOpen, ThumbsUp, BarChart2, FilterIcon, RefreshCw
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -318,6 +318,25 @@ const TRENDING_TOPICS = [
   },
 ];
 
+
+// Helper component for Lightning icon
+const Lightning = ({ size = 24, className = '' }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+  </svg>
+);
+
 // Home page component
 const HomePage = () => {
   const dispatch = useDispatch();
@@ -565,7 +584,7 @@ const HomePage = () => {
         <div className="max-w-6xl mx-auto px-4">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
-              <Trending size={24} className="mr-2 text-primary" />
+              <TrendingUp size={24} className="mr-2 text-primary" />
               Trending Topics
             </h2>
             
@@ -763,22 +782,6 @@ const HomePage = () => {
   );
 };
 
-// Helper component for Lightning icon
-const Lightning = ({ size = 24, className = '' }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
-  </svg>
-);
+
 
 export default HomePage;

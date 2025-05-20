@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Command, Search, Home, FileText, Settings, User, BookOpen, Code, 
   PlusCircle, Bookmark, List, Zap, Upload, Download, Shuffle, Moon, 
-  Sun, LogOut, Bell, Github, Tool, Bookmark as BookmarkIcon, Terminal,
+  Sun, LogOut, Bell, Github, Wrench, Bookmark as BookmarkIcon, Terminal,
   Hash, Folder, Star, GitPullRequest, Database, Layers, Key, HelpCircle
 } from 'lucide-react';
 import { toggleDarkMode, toggleCommandPalette, closeCommandPalette } from '../../store/slices/uiSlice';
@@ -157,7 +157,7 @@ const CommandPalette = () => {
     {
       id: 'developer-tools',
       name: 'Developer Tools',
-      icon: <Tool size={18} />,
+      icon: <Wrench size={18} />,
       category: CATEGORIES.TOOLS,
       action: () => navigate('/developer-tools'),
       keywords: ['tools', 'debug', 'utilities'],
