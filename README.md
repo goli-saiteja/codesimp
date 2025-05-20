@@ -1,2 +1,1 @@
-# codesimp
-blogging application
+# seller_intelligence

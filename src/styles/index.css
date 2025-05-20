@@ -1,0 +1,163 @@
+/* src/styles/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary: 37 99 235;
+    --color-secondary: 79 70 229;
+    --color-accent: 168 85 247;
+    --color-success: 16 185 129;
+    --color-warning: 245 158 11;
+    --color-danger: 239 68 68;
+    --color-info: 6 182 212;
+    
+    --font-code: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+    --font-heading: 'Inter', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: rgb(var(--color-gray-200) / 0.5);
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--color-gray-400) / 0.5);
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--color-gray-500) / 0.8);
+  }
+  
+  /* Dark mode adjustments */
+  .dark {
+    --color-gray-50: 15 23 42;
+    --color-gray-100: 30 41 59;
+    --color-gray-200: 51 65 85;
+    --color-gray-300: 71 85 105;
+    --color-gray-400: 100 116 139;
+    --color-gray-500: 148 163 184;
+    --color-gray-600: 203 213 225;
+    --color-gray-700: 226 232 240;
+    --color-gray-800: 241 245 249;
+    --color-gray-900: 248 250 252;
+    
+    color-scheme: dark;
+  }
+  
+  body {
+    @apply font-body text-gray-900 dark:text-gray-100 antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading font-bold;
+  }
+  
+  code, pre {
+    @apply font-code;
+  }
+}
+
+@layer components {
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 
+           disabled:pointer-events-none disabled:opacity-50;
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary/90 
+           dark:bg-primary dark:text-white dark:hover:bg-primary/90;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary text-white hover:bg-secondary/90 
+           dark:bg-secondary dark:text-white dark:hover:bg-secondary/90;
+  }
+  
+  .btn-outline {
+    @apply border border-gray-300 bg-transparent hover:bg-gray-100 
+           dark:border-gray-700 dark:hover:bg-gray-800;
+  }
+  
+  .btn-ghost {
+    @apply bg-transparent hover:bg-gray-100 
+           dark:hover:bg-gray-800;
+  }
+  
+  /* Sizing variants */
+  .btn-sm {
+    @apply h-8 px-3 text-xs;
+  }
+  
+  .btn-md {
+    @apply h-10 px-4;
+  }
+  
+  .btn-lg {
+    @apply h-12 px-6 text-base;
+  }
+  
+  /* Form elements */
+  .input {
+    @apply flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm
+           placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
+           disabled:cursor-not-allowed disabled:opacity-50
+           dark:border-gray-700 dark:bg-gray-900 dark:text-gray-50 dark:placeholder:text-gray-500
+           dark:focus:ring-primary;
+  }
+  
+  /* Card components */
+  .card {
+    @apply rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-all
+           hover:shadow-md dark:border-gray-700 dark:bg-gray-800;
+  }
+  
+  /* Badge components */
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  
+  .badge-primary {
+    @apply bg-primary/10 text-primary dark:bg-primary/20;
+  }
+  
+  .badge-secondary {
+    @apply bg-secondary/10 text-secondary dark:bg-secondary/20;
+  }
+  
+  /* Animation utilities */
+  .animate-in {
+    animation: animate-in 0.3s ease-in-out;
+  }
+  
+  @keyframes animate-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Code syntax highlighting theme */
+  .syntax-dark {
+    @apply bg-gray-900 text-gray-50;
+  }
+  
+  .syntax-light {
+    @apply bg-gray-50 text-gray-900;
+  }
+}
