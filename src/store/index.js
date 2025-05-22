@@ -1,42 +1,45 @@
-// src/store/index.js
 import { configureStore } from '@reduxjs/toolkit';
-import { setupListeners } from '@reduxjs/toolkit/query';
+import { combineReducers } from 'redux';
+import { persistReducer, persistStore } from 'redux-persist';
+import storage from 'redux-persist/lib/storage';
+import thunk from 'redux-thunk';
 
-// Import reducers
-import authReducer from './slices/authSlice';
-import uiReducer from './slices/uiSlice';
-import editorReducer from './slices/editorSlice';
-import postsReducer from './slices/postsSlice';
-import userReducer from './slices/userSlice';
-import analyticsReducer from './slices/analyticsSlice';
-import searchReducer from './slices/searchSlice';
-import notificationsReducer from './slices/notificationsSlice';
-import playgroundReducer from './slices/playgroundSlice';
-import githubReducer from './slices/githubSlice';
+// Import slices
+import authSlice from './slices/authSlice';
+import articleSlice from './slices/articleSlice';
+import editorSlice from './slices/editorSlice';
+import uiSlice from './slices/uiSlice';
+import userSlice from './slices/userSlice';
+import searchSlice from './slices/searchSlice';
 
-// Import API services
-import { apiService } from '../services/apiService';
+// Configure persist options
+const persistConfig = {
+  key: 'root',
+  storage,
+  whitelist: ['auth', 'user'], // Only persist auth and user state
+};
 
-const store = configureStore({
-  reducer: {
-    auth: authReducer,
-    ui: uiReducer,
-    editor: editorReducer,
-    posts: postsReducer,
-    user: userReducer,
-    analytics: analyticsReducer,
-    search: searchReducer,
-    notifications: notificationsReducer,
-    playground: playgroundReducer,
-    github: githubReducer,
-    [apiService.reducerPath]: apiService.reducer,
-  },
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(apiService.middleware),
+// Combine reducers
+const rootReducer = combineReducers({
+  auth: authSlice,
+  articles: articleSlice,
+  editor: editorSlice,
+  ui: uiSlice,
+  user: userSlice,
+  search: searchSlice,
+});
+
+// Create persisted reducer
+const persistedReducer = persistReducer(persistConfig, rootReducer);
+
+// Configure store
+export const store = configureStore({
+  reducer: persistedReducer,
+  middleware: [thunk],
   devTools: process.env.NODE_ENV !== 'production',
 });
 
-// Setup listeners for RTK Query
-setupListeners(store.dispatch);
+// Create persistor
+export const persistor = persistStore(store);
 
-export default store;
+export default { store, persistor };

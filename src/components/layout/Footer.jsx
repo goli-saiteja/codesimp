@@ -1,222 +1,172 @@
-// src/components/layout/Footer.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Code, Github, Twitter, Linkedin, Mail, Coffee, 
-  Heart, ExternalLink, BookOpen, User, Terminal, 
-  Shield, FileText, HelpCircle
-} from 'lucide-react';
+import { Github, Twitter, Linkedin, Heart, Coffee } from 'lucide-react';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
   
-  const footerLinks = {
-    platform: [
-      { name: 'Home', path: '/' },
-      { name: 'Explore', path: '/explore' },
-      { name: 'Topics', path: '/topics' },
-      { name: 'Code Playground', path: '/playground' },
-      { name: 'Authors', path: '/authors' },
-    ],
-    support: [
-      { name: 'Help Center', path: '/help' },
-      { name: 'Feedback', path: '/feedback' },
-      { name: 'Contact Us', path: '/contact' },
-      { name: 'Status', path: '/status', external: true },
-    ],
-    legal: [
-      { name: 'Terms of Service', path: '/terms' },
-      { name: 'Privacy Policy', path: '/privacy' },
-      { name: 'Code of Conduct', path: '/code-of-conduct' },
-      { name: 'Cookies', path: '/cookies' },
-    ],
-    resources: [
-      { name: 'Documentation', path: '/docs' },
-      { name: 'API Reference', path: '/api' },
-      { name: 'Showcase', path: '/showcase' },
-      { name: 'Open Source', path: '/open-source' },
-    ],
-  };
-  
-  const socialLinks = [
-    { name: 'GitHub', icon: <Github size={18} />, url: 'https://github.com/codesource' },
-    { name: 'Twitter', icon: <Twitter size={18} />, url: 'https://twitter.com/codesource' },
-    { name: 'LinkedIn', icon: <Linkedin size={18} />, url: 'https://linkedin.com/company/codesource' },
-    { name: 'Email', icon: <Mail size={18} />, url: 'mailto:contact@codesource.com' },
-  ];
-  
-  // Top technologies
-  const topTechnologies = [
-    { name: 'React', path: '/topic/react' },
-    { name: 'JavaScript', path: '/topic/javascript' },
-    { name: 'Python', path: '/topic/python' },
-    { name: 'TypeScript', path: '/topic/typescript' },
-    { name: 'Node.js', path: '/topic/nodejs' },
-    { name: 'Go', path: '/topic/go' },
-    { name: 'Rust', path: '/topic/rust' },
-    { name: 'DevOps', path: '/topic/devops' },
-  ];
-  
   return (
-    <footer className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
-          {/* Brand */}
-          <div className="lg:col-span-1">
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-9 h-9 bg-gradient-to-br from-primary to-primary-dark rounded-lg flex items-center justify-center">
-                <Code size={20} className="text-white" />
+    <footer className="bg-white border-t border-neutral-200 mt-auto">
+      <div className="max-w-7xl mx-auto px-4 py-8 md:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          {/* Brand section */}
+          <div className="md:col-span-1">
+            <Link to="/" className="flex items-center mb-4">
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary-600 to-primary-400 flex items-center justify-center text-white font-bold text-lg">
+                C
               </div>
-              <span className="font-bold text-xl text-gray-900 dark:text-white">CodeSource</span>
-            </div>
-            <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
-              The premium platform for coding blogs and knowledge sharing within the developer community.
+              <span className="ml-2 text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-primary-400">
+                CodeSiMP
+              </span>
+            </Link>
+            <p className="text-sm text-neutral-600 mb-4">
+              A professional platform for developers to share knowledge, ideas, and code.
             </p>
-            <div className="flex space-x-3">
-              {socialLinks.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary-light"
-                  aria-label={link.name}
-                >
-                  {link.icon}
-                </a>
-              ))}
+            <div className="flex space-x-4">
+              <a 
+                href="https://github.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-neutral-600 hover:text-neutral-900 transition-colors"
+                aria-label="GitHub"
+              >
+                <Github className="h-5 w-5" />
+              </a>
+              <a 
+                href="https://twitter.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-neutral-600 hover:text-neutral-900 transition-colors"
+                aria-label="Twitter"
+              >
+                <Twitter className="h-5 w-5" />
+              </a>
+              <a 
+                href="https://linkedin.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-neutral-600 hover:text-neutral-900 transition-colors"
+                aria-label="LinkedIn"
+              >
+                <Linkedin className="h-5 w-5" />
+              </a>
             </div>
           </div>
           
-          {/* Navigation Links */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
-              Platform
-            </h3>
-            <ul className="space-y-2">
-              {footerLinks.platform.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    to={link.path}
-                    className="text-gray-600 hover:text-primary dark:text-gray-300 dark:hover:text-primary-light text-sm"
-                  >
-                    {link.name}
+          {/* Links sections */}
+          <div className="md:col-span-3 grid grid-cols-2 sm:grid-cols-3 gap-8">
+            <div>
+              <h3 className="text-sm font-semibold text-neutral-900 uppercase tracking-wider mb-4">
+                Platform
+              </h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link to="/about" className="text-neutral-600 hover:text-primary-600 text-sm">
+                    About us
                   </Link>
                 </li>
-              ))}
-            </ul>
-          </div>
-          
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
-              Support
-            </h3>
-            <ul className="space-y-2">
-              {footerLinks.support.map((link) => (
-                <li key={link.name}>
-                  {link.external ? (
-                    <a
-                      href={link.path}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-600 hover:text-primary dark:text-gray-300 dark:hover:text-primary-light text-sm flex items-center"
-                    >
-                      {link.name}
-                      <ExternalLink size={12} className="ml-1" />
-                    </a>
-                  ) : (
-                    <Link
-                      to={link.path}
-                      className="text-gray-600 hover:text-primary dark:text-gray-300 dark:hover:text-primary-light text-sm"
-                    >
-                      {link.name}
-                    </Link>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-          
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
-              Legal
-            </h3>
-            <ul className="space-y-2">
-              {footerLinks.legal.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    to={link.path}
-                    className="text-gray-600 hover:text-primary dark:text-gray-300 dark:hover:text-primary-light text-sm"
-                  >
-                    {link.name}
+                <li>
+                  <Link to="/explore" className="text-neutral-600 hover:text-primary-600 text-sm">
+                    Explore
                   </Link>
                 </li>
-              ))}
-            </ul>
-          </div>
-          
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
-              Resources
-            </h3>
-            <ul className="space-y-2">
-              {footerLinks.resources.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    to={link.path}
-                    className="text-gray-600 hover:text-primary dark:text-gray-300 dark:hover:text-primary-light text-sm"
-                  >
-                    {link.name}
+                <li>
+                  <Link to="/editor" className="text-neutral-600 hover:text-primary-600 text-sm">
+                    Write
                   </Link>
                 </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-        
-        {/* Trending technologies */}
-        <div className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-800">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-            Popular Technologies
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {topTechnologies.map((tech) => (
-              <Link
-                key={tech.name}
-                to={tech.path}
-                className="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full px-3 py-1 text-xs"
-              >
-                {tech.name}
-              </Link>
-            ))}
+                <li>
+                  <Link to="/dashboard" className="text-neutral-600 hover:text-primary-600 text-sm">
+                    Dashboard
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/pricing" className="text-neutral-600 hover:text-primary-600 text-sm">
+                    Pricing
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="text-sm font-semibold text-neutral-900 uppercase tracking-wider mb-4">
+                Resources
+              </h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link to="/docs" className="text-neutral-600 hover:text-primary-600 text-sm">
+                    Documentation
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/api" className="text-neutral-600 hover:text-primary-600 text-sm">
+                    API
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/guides" className="text-neutral-600 hover:text-primary-600 text-sm">
+                    Guides
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/tutorials" className="text-neutral-600 hover:text-primary-600 text-sm">
+                    Tutorials
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/blog" className="text-neutral-600 hover:text-primary-600 text-sm">
+                    Blog
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="text-sm font-semibold text-neutral-900 uppercase tracking-wider mb-4">
+                Company
+              </h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link to="/careers" className="text-neutral-600 hover:text-primary-600 text-sm">
+                    Careers
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/privacy" className="text-neutral-600 hover:text-primary-600 text-sm">
+                    Privacy
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/terms" className="text-neutral-600 hover:text-primary-600 text-sm">
+                    Terms
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/contact" className="text-neutral-600 hover:text-primary-600 text-sm">
+                    Contact
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/help" className="text-neutral-600 hover:text-primary-600 text-sm">
+                    Help
+                  </Link>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
         
         {/* Bottom section */}
-        <div className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-800">
+        <div className="mt-12 pt-6 border-t border-neutral-200">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center mb-4 md:mb-0">
-              <p className="text-gray-500 dark:text-gray-400 text-sm">
-                © {currentYear} CodeSource. All rights reserved.
-              </p>
-            </div>
+            <p className="text-sm text-neutral-600">
+              &copy; {currentYear} CodeSiMP. All rights reserved.
+            </p>
             
-            <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400">
-              <span className="text-sm">Built with</span>
-              <Heart size={14} className="text-red-500" />
-              <span className="text-sm">by developers for developers</span>
-            </div>
-            
-            <div className="flex items-center mt-4 md:mt-0">
-              <a
-                href="https://github.com/sponsors/codesource"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center space-x-1 text-sm text-primary dark:text-primary-light hover:text-primary-dark"
-              >
-                <Coffee size={14} />
-                <span>Support this project</span>
-              </a>
+            <div className="mt-4 md:mt-0 flex items-center text-sm text-neutral-600">
+              <span className="flex items-center">
+                Made with <Heart className="h-4 w-4 mx-1 text-error-500" /> and <Coffee className="h-4 w-4 mx-1 text-warning-600" />
+              </span>
             </div>
           </div>
         </div>

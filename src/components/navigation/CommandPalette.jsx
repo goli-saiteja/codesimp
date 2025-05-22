@@ -1,560 +1,446 @@
-// src/components/navigation/CommandPalette.jsx
-import React, { useState, useEffect, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Command, Search, Home, FileText, Settings, User, BookOpen, Code, 
-  PlusCircle, Bookmark, List, Zap, Upload, Download, Shuffle, Moon, 
-  Sun, LogOut, Bell, Github, Wrench, Bookmark as BookmarkIcon, Terminal,
-  Hash, Folder, Star, GitPullRequest, Database, Layers, Key, HelpCircle
+  Home, FileText, Settings, Search, User, Bookmark, 
+  TrendingUp, Tag, BarChart2, Calendar, Terminal,
+  File, Coffee, Code, Bell, Filter, X, ArrowRight,
+  HelpCircle, Star, Feather, ExternalLink
 } from 'lucide-react';
-import { toggleDarkMode, toggleCommandPalette, closeCommandPalette } from '../../store/slices/uiSlice';
-import { logoutUser } from '../../store/slices/authSlice';
-import { useGetUserProfileQuery } from '../../services/apiService';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// Command categories
-const CATEGORIES = {
-  NAVIGATION: 'Navigation',
-  ACTIONS: 'Actions',
-  CREATE: 'Create New',
-  TOOLS: 'Developer Tools',
-  SEARCH: 'Search',
-  THEME: 'Appearance',
-  ACCOUNT: 'Account',
-};
-
-const CommandPalette = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { isOpen } = useSelector(state => state.ui.commandPalette);
-  const { isAuthenticated, user } = useSelector(state => state.auth);
-  const { darkMode } = useSelector(state => state.ui);
+const CommandPalette = ({ isOpen, onClose }) => {
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
-  const [filteredCommands, setFilteredCommands] = useState([]);
-  const [recentCommands, setRecentCommands] = useState([]);
+  const [activeSection, setActiveSection] = useState('all');
   const inputRef = useRef(null);
   const commandListRef = useRef(null);
-  const activeItemRef = useRef(null);
+  const navigate = useNavigate();
   
-  // Fetch user data if authenticated
-  const { data: userData } = useGetUserProfileQuery(
-    user?.id,
-    { skip: !isAuthenticated || !user?.id }
-  );
-  
-  // Define all available commands
-  const allCommands = [
-    // Navigation
-    {
-      id: 'home',
-      name: 'Go to Home',
-      shortcut: 'g h',
-      icon: <Home size={18} />,
-      category: CATEGORIES.NAVIGATION,
-      action: () => navigate('/'),
-      keywords: ['dashboard', 'feed', 'main', 'homepage'],
-    },
-    {
-      id: 'explore',
-      name: 'Explore Topics',
-      shortcut: 'g e',
-      icon: <Hash size={18} />,
-      category: CATEGORIES.NAVIGATION,
-      action: () => navigate('/explore'),
-      keywords: ['topics', 'discover', 'browse', 'categories'],
-    },
-    {
-      id: 'bookmarks',
-      name: 'View Bookmarks',
-      shortcut: 'g b',
-      icon: <BookmarkIcon size={18} />,
-      category: CATEGORIES.NAVIGATION,
-      action: () => navigate('/bookmarks'),
-      keywords: ['saved', 'favorites', 'reading list'],
-      requiresAuth: true,
-    },
-    {
-      id: 'playground',
-      name: 'Code Playground',
-      shortcut: 'g p',
-      icon: <Terminal size={18} />,
-      category: CATEGORIES.NAVIGATION,
-      action: () => navigate('/playground'),
-      keywords: ['code', 'editor', 'sandbox', 'execute', 'run'],
-    },
-    {
-      id: 'profile',
-      name: 'Your Profile',
-      shortcut: 'g u',
-      icon: <User size={18} />,
-      category: CATEGORIES.NAVIGATION,
-      action: () => navigate(`/profile/${user?.id}`),
-      keywords: ['account', 'me', 'my profile'],
-      requiresAuth: true,
-    },
-    {
-      id: 'settings',
-      name: 'Settings',
-      shortcut: 'g s',
-      icon: <Settings size={18} />,
-      category: CATEGORIES.NAVIGATION,
-      action: () => navigate('/settings'),
-      keywords: ['preferences', 'config', 'options'],
-      requiresAuth: true,
-    },
-    
-    // Actions
-    {
-      id: 'new-story',
-      name: 'Create New Post',
-      shortcut: 'c p',
-      icon: <PlusCircle size={18} />,
-      category: CATEGORIES.CREATE,
-      action: () => navigate('/new-story'),
-      keywords: ['write', 'new', 'article', 'blog'],
-      requiresAuth: true,
-    },
-    {
-      id: 'new-snippet',
-      name: 'Create Code Snippet',
-      shortcut: 'c s',
-      icon: <Code size={18} />,
-      category: CATEGORIES.CREATE,
-      action: () => navigate('/new-snippet'),
-      keywords: ['code', 'gist', 'sample'],
-      requiresAuth: true,
-    },
-    {
-      id: 'new-series',
-      name: 'Create Article Series',
-      shortcut: 'c e',
-      icon: <List size={18} />,
-      category: CATEGORIES.CREATE,
-      action: () => navigate('/new-series'),
-      keywords: ['collection', 'tutorial', 'guide'],
-      requiresAuth: true,
-    },
-    
-    // Tools
-    {
-      id: 'github-integration',
-      name: 'GitHub Integration',
-      icon: <Github size={18} />,
-      category: CATEGORIES.TOOLS,
-      action: () => navigate('/github-integration'),
-      keywords: ['git', 'repo', 'repository', 'connect'],
-      requiresAuth: true,
-    },
-    {
-      id: 'api-docs',
-      name: 'API Documentation',
-      icon: <Database size={18} />,
-      category: CATEGORIES.TOOLS,
-      action: () => navigate('/api-docs'),
-      keywords: ['api', 'endpoints', 'reference', 'documentation'],
-    },
-    {
-      id: 'developer-tools',
-      name: 'Developer Tools',
-      icon: <Wrench size={18} />,
-      category: CATEGORIES.TOOLS,
-      action: () => navigate('/developer-tools'),
-      keywords: ['tools', 'debug', 'utilities'],
-      requiresAuth: true,
-    },
-    {
-      id: 'analytics',
-      name: 'View Analytics',
-      icon: <Layers size={18} />,
-      category: CATEGORIES.TOOLS,
-      action: () => navigate('/analytics'),
-      keywords: ['stats', 'metrics', 'performance', 'views'],
-      requiresAuth: true,
-    },
-    {
-      id: 'code-generators',
-      name: 'Code Generators',
-      icon: <Zap size={18} />,
-      category: CATEGORIES.TOOLS,
-      action: () => navigate('/code-generators'),
-      keywords: ['generate', 'boilerplate', 'scaffold', 'template'],
-    },
-    
-    // Search
-    {
-      id: 'search',
-      name: 'Search Content',
-      shortcut: '/',
-      icon: <Search size={18} />,
-      category: CATEGORIES.SEARCH,
-      action: () => {
-        dispatch(closeCommandPalette());
-        setTimeout(() => {
-          const searchInput = document.querySelector('#global-search-input');
-          if (searchInput) {
-            searchInput.focus();
-          } else {
-            navigate('/search');
-          }
-        }, 100);
-      },
-      keywords: ['find', 'query', 'lookup'],
-    },
-    {
-      id: 'search-code',
-      name: 'Search Code Snippets',
-      icon: <Code size={18} />,
-      category: CATEGORIES.SEARCH,
-      action: () => navigate('/search?type=code'),
-      keywords: ['snippets', 'find code', 'search code', 'examples'],
-    },
-    {
-      id: 'search-users',
-      name: 'Search Users',
-      icon: <User size={18} />,
-      category: CATEGORIES.SEARCH,
-      action: () => navigate('/search?type=users'),
-      keywords: ['people', 'authors', 'find users', 'profiles'],
-    },
-    
-    // Theme
-    {
-      id: 'toggle-theme',
-      name: darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode',
-      shortcut: 'ctrl+j',
-      icon: darkMode ? <Sun size={18} /> : <Moon size={18} />,
-      category: CATEGORIES.THEME,
-      action: () => dispatch(toggleDarkMode()),
-      keywords: ['dark', 'light', 'theme', 'appearance', 'mode'],
-    },
-    
-    // Account
-    {
-      id: 'logout',
-      name: 'Sign Out',
-      icon: <LogOut size={18} />,
-      category: CATEGORIES.ACCOUNT,
-      action: () => {
-        dispatch(logoutUser());
-        navigate('/');
-      },
-      keywords: ['logout', 'sign out', 'exit'],
-      requiresAuth: true,
-    },
-    {
-      id: 'notifications',
-      name: 'View Notifications',
-      icon: <Bell size={18} />,
-      category: CATEGORIES.ACCOUNT,
-      action: () => navigate('/notifications'),
-      keywords: ['alerts', 'mentions', 'activity'],
-      requiresAuth: true,
-    },
-    {
-      id: 'api-keys',
-      name: 'Manage API Keys',
-      icon: <Key size={18} />,
-      category: CATEGORIES.ACCOUNT,
-      action: () => navigate('/settings/api-keys'),
-      keywords: ['tokens', 'access', 'credentials'],
-      requiresAuth: true,
-    },
-    {
-      id: 'help',
-      name: 'Help & Support',
-      icon: <HelpCircle size={18} />,
-      category: CATEGORIES.ACCOUNT,
-      action: () => navigate('/help'),
-      keywords: ['support', 'docs', 'faq', 'assistance'],
-    },
-  ];
-  
-  // Get recent commands from localStorage on mount
+  // Reset state when opening palette
   useEffect(() => {
-    const savedRecent = localStorage.getItem('recentCommands');
-    if (savedRecent) {
-      try {
-        setRecentCommands(JSON.parse(savedRecent));
-      } catch (error) {
-        console.error('Failed to parse recent commands:', error);
-      }
-    }
-  }, []);
-  
-  // Filter commands based on query and auth status
-  useEffect(() => {
-    if (!query) {
-      const availableCommands = allCommands.filter(cmd => 
-        !cmd.requiresAuth || isAuthenticated
-      );
-      
-      // Group by category
-      const groupedCommands = Object.values(
-        availableCommands.reduce((acc, command) => {
-          if (!acc[command.category]) {
-            acc[command.category] = {
-              category: command.category,
-              commands: []
-            };
-          }
-          acc[command.category].commands.push(command);
-          return acc;
-        }, {})
-      );
-      
-      // Add recent commands section if available
-      if (recentCommands.length > 0) {
-        const recentCommandsData = recentCommands
-          .map(id => allCommands.find(cmd => cmd.id === id))
-          .filter(cmd => cmd && (!cmd.requiresAuth || isAuthenticated))
-          .slice(0, 5);
-        
-        if (recentCommandsData.length > 0) {
-          groupedCommands.unshift({
-            category: 'Recent',
-            commands: recentCommandsData
-          });
-        }
-      }
-      
-      setFilteredCommands(groupedCommands);
-    } else {
-      // Flat list of filtered commands when searching
-      const searchableCommands = allCommands.filter(cmd => 
-        !cmd.requiresAuth || isAuthenticated
-      );
-      
-      const matched = searchableCommands.filter(cmd => {
-        const searchTerms = [cmd.name.toLowerCase(), ...(cmd.keywords || [])];
-        return searchTerms.some(term => term.includes(query.toLowerCase()));
-      });
-      
-      setFilteredCommands([{ 
-        category: 'Search Results', 
-        commands: matched 
-      }]);
-    }
-    
-    setActiveIndex(0);
-  }, [query, isAuthenticated, recentCommands, darkMode]);
-  
-  // Focus input when modal opens
-  useEffect(() => {
-    if (isOpen && inputRef.current) {
-      setTimeout(() => {
-        inputRef.current.focus();
-      }, 100);
-    } else {
+    if (isOpen) {
       setQuery('');
+      setActiveIndex(0);
+      setActiveSection('all');
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
     }
   }, [isOpen]);
   
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!isOpen) return;
+      
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setActiveIndex((prevIndex) => 
+            prevIndex < filteredCommands.length - 1 ? prevIndex + 1 : prevIndex
+          );
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setActiveIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : 0));
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (filteredCommands[activeIndex]) {
+            executeCommand(filteredCommands[activeIndex]);
+          }
+          break;
+        default:
+          break;
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, activeIndex, query]);
+  
   // Scroll active item into view
   useEffect(() => {
-    if (activeItemRef.current) {
-      activeItemRef.current.scrollIntoView({
-        block: 'nearest',
-      });
+    const activeItem = document.getElementById(`command-${activeIndex}`);
+    if (activeItem && commandListRef.current) {
+      const container = commandListRef.current;
+      const itemTop = activeItem.offsetTop;
+      const itemBottom = itemTop + activeItem.offsetHeight;
+      const containerTop = container.scrollTop;
+      const containerBottom = containerTop + container.offsetHeight;
+      
+      if (itemTop < containerTop) {
+        container.scrollTop = itemTop;
+      } else if (itemBottom > containerBottom) {
+        container.scrollTop = itemBottom - container.offsetHeight;
+      }
     }
   }, [activeIndex]);
   
-  // Handle keyboard navigation
-  const handleKeyDown = (e) => {
-    // Count total commands
-    const totalCommands = filteredCommands.reduce(
-      (count, group) => count + group.commands.length, 
-      0
-    );
-    
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setActiveIndex(index => (index + 1) % totalCommands);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setActiveIndex(index => (index - 1 + totalCommands) % totalCommands);
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      executeActiveCommand();
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      dispatch(closeCommandPalette());
-    }
-  };
+  // Command categories
+  const categories = [
+    { id: 'all', label: 'All', icon: Search },
+    { id: 'navigation', label: 'Navigation', icon: ArrowRight },
+    { id: 'content', label: 'Content', icon: FileText },
+    { id: 'actions', label: 'Actions', icon: Terminal },
+    { id: 'settings', label: 'Settings', icon: Settings },
+  ];
   
-  // Execute the active command
-  const executeActiveCommand = () => {
-    // Find the active command
-    let currentIndex = 0;
-    let activeCommand = null;
+  // Command data
+  const commands = [
+    // Navigation commands
+    { 
+      id: 'home', 
+      name: 'Go to Home', 
+      shortcut: 'g h', 
+      section: 'navigation',
+      icon: Home, 
+      action: () => navigate('/') 
+    },
+    { 
+      id: 'explore', 
+      name: 'Go to Explore', 
+      shortcut: 'g e', 
+      section: 'navigation',
+      icon: TrendingUp, 
+      action: () => navigate('/explore') 
+    },
+    { 
+      id: 'bookmarks', 
+      name: 'Go to Bookmarks', 
+      shortcut: 'g b', 
+      section: 'navigation',
+      icon: Bookmark, 
+      action: () => navigate('/bookmarks') 
+    },
+    { 
+      id: 'profile', 
+      name: 'Go to Profile', 
+      shortcut: 'g p', 
+      section: 'navigation',
+      icon: User, 
+      action: () => navigate('/profile') 
+    },
+    { 
+      id: 'dashboard', 
+      name: 'Go to Dashboard', 
+      shortcut: 'g d', 
+      section: 'navigation',
+      icon: BarChart2, 
+      action: () => navigate('/dashboard') 
+    },
+    { 
+      id: 'notifications', 
+      name: 'Go to Notifications', 
+      shortcut: 'g n', 
+      section: 'navigation',
+      icon: Bell, 
+      action: () => navigate('/notifications') 
+    },
+    { 
+      id: 'settings', 
+      name: 'Go to Settings', 
+      shortcut: 'g s', 
+      section: 'navigation',
+      icon: Settings, 
+      action: () => navigate('/settings') 
+    },
     
-    for (const group of filteredCommands) {
-      for (const command of group.commands) {
-        if (currentIndex === activeIndex) {
-          activeCommand = command;
-          break;
-        }
-        currentIndex++;
-      }
-      if (activeCommand) break;
-    }
+    // Content commands
+    { 
+      id: 'create-article', 
+      name: 'Create New Article', 
+      shortcut: 'c a', 
+      section: 'content',
+      icon: Feather, 
+      action: () => navigate('/editor') 
+    },
+    { 
+      id: 'my-articles', 
+      name: 'My Articles', 
+      shortcut: 'm a', 
+      section: 'content',
+      icon: FileText, 
+      action: () => navigate('/profile/articles') 
+    },
+    { 
+      id: 'drafts', 
+      name: 'View Drafts', 
+      shortcut: 'v d', 
+      section: 'content',
+      icon: File, 
+      action: () => navigate('/profile/drafts') 
+    },
+    { 
+      id: 'browse-javascript', 
+      name: 'Browse JavaScript Articles', 
+      section: 'content',
+      icon: Code, 
+      action: () => navigate('/category/javascript') 
+    },
+    { 
+      id: 'browse-react', 
+      name: 'Browse React Articles', 
+      section: 'content',
+      icon: Code, 
+      action: () => navigate('/category/react') 
+    },
     
-    if (activeCommand) {
-      // Update recent commands
-      const updatedRecent = [
-        activeCommand.id,
-        ...recentCommands.filter(id => id !== activeCommand.id)
-      ].slice(0, 5);
-      
-      setRecentCommands(updatedRecent);
-      localStorage.setItem('recentCommands', JSON.stringify(updatedRecent));
-      
-      // Execute command action
-      activeCommand.action();
-      
-      // Close palette
-      dispatch(closeCommandPalette());
-    }
-  };
+    // Action commands
+    { 
+      id: 'search-articles', 
+      name: 'Search Articles', 
+      shortcut: '/', 
+      section: 'actions',
+      icon: Search, 
+      action: () => {
+        onClose();
+        setTimeout(() => {
+          const searchInput = document.querySelector('input[placeholder*="Search"]');
+          if (searchInput) searchInput.focus();
+        }, 100);
+      } 
+    },
+    { 
+      id: 'toggle-theme', 
+      name: 'Toggle Dark Theme', 
+      shortcut: 't d', 
+      section: 'actions',
+      icon: Terminal, 
+      action: () => {
+        document.documentElement.classList.toggle('dark');
+        onClose();
+      } 
+    },
+    { 
+      id: 'create-snippet', 
+      name: 'Create Code Snippet', 
+      section: 'actions',
+      icon: Terminal, 
+      action: () => navigate('/snippet/new') 
+    },
+    { 
+      id: 'bookmark-page', 
+      name: 'Bookmark Current Page', 
+      shortcut: 'b', 
+      section: 'actions',
+      icon: Star, 
+      action: () => {
+        // Bookmark logic would go here
+        onClose();
+      } 
+    },
+    
+    // Settings commands
+    { 
+      id: 'account-settings', 
+      name: 'Account Settings', 
+      section: 'settings',
+      icon: User, 
+      action: () => navigate('/settings/account') 
+    },
+    { 
+      id: 'notification-settings', 
+      name: 'Notification Settings', 
+      section: 'settings',
+      icon: Bell, 
+      action: () => navigate('/settings/notifications') 
+    },
+    { 
+      id: 'appearance-settings', 
+      name: 'Appearance Settings', 
+      section: 'settings',
+      icon: Settings, 
+      action: () => navigate('/settings/appearance') 
+    },
+    { 
+      id: 'help', 
+      name: 'Help & Support', 
+      section: 'settings',
+      icon: HelpCircle, 
+      action: () => navigate('/help') 
+    },
+  ];
   
-  // Get flattened index for each command
-  const getFlattenedIndex = (groupIndex, commandIndex) => {
-    let index = 0;
-    for (let i = 0; i < groupIndex; i++) {
-      index += filteredCommands[i].commands.length;
-    }
-    return index + commandIndex;
-  };
+  // Filter commands based on query and active section
+  const filteredCommands = commands.filter((command) => {
+    const matchesQuery = query === '' || 
+      command.name.toLowerCase().includes(query.toLowerCase());
+    
+    const matchesSection = activeSection === 'all' || 
+      command.section === activeSection;
+    
+    return matchesQuery && matchesSection;
+  });
   
-  if (!isOpen) return null;
+  // Execute selected command
+  const executeCommand = (command) => {
+    onClose();
+    command.action();
+  };
   
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
-        <div 
-          className="fixed inset-0 bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 transition-opacity"
-          onClick={() => dispatch(closeCommandPalette())}
-        ></div>
-        
-        <div className="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-900 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl">
-          <div className="flex items-center border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-            <div className="mr-3 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/20 text-primary">
-              <Command size={18} />
-            </div>
-            <input
-              ref={inputRef}
-              type="text"
-              className="w-full bg-transparent border-0 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:ring-0 text-base"
-              placeholder="Search for commands..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
-            <div className="ml-3 flex items-center gap-1">
-              <kbd className="hidden sm:inline-flex h-6 items-center rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-1.5 font-mono text-xs text-gray-500 dark:text-gray-400">
-                ↑↓
-              </kbd>
-              <kbd className="hidden sm:inline-flex h-6 items-center rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-1.5 font-mono text-xs text-gray-500 dark:text-gray-400">
-                ⏎
-              </kbd>
-              <kbd className="hidden sm:inline-flex h-6 items-center rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-1.5 font-mono text-xs text-gray-500 dark:text-gray-400">
-                esc
-              </kbd>
-            </div>
-          </div>
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 md:p-20 bg-neutral-900/50 backdrop-blur-sm">
+          {/* Modal backdrop */}
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="fixed inset-0"
+            onClick={onClose}
+          />
           
-          <div 
-            ref={commandListRef}
-            className="max-h-[60vh] overflow-y-auto py-2"
+          {/* Command palette modal */}
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="relative mx-auto max-w-2xl transform divide-y divide-neutral-200 rounded-xl bg-white shadow-2xl ring-1 ring-black ring-opacity-5 overflow-hidden"
           >
-            {filteredCommands.length === 0 ? (
-              <div className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                <HelpCircle size={36} className="mx-auto mb-2 opacity-50" />
-                <p>No commands found</p>
-                <p className="text-sm mt-1">Try a different search term</p>
-              </div>
-            ) : (
-              filteredCommands.map((group, groupIndex) => (
-                <div key={group.category} className="mb-3">
-                  <h3 className="px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
-                    {group.category}
-                  </h3>
-                  <ul>
-                    {group.commands.map((command, cmdIndex) => {
-                      const flatIndex = getFlattenedIndex(groupIndex, cmdIndex);
-                      const isActive = activeIndex === flatIndex;
-                      
-                      return (
-                        <li
-                          key={command.id}
-                          ref={isActive ? activeItemRef : null}
-                          className={`px-4 py-2 cursor-pointer ${
-                            isActive 
-                              ? 'bg-primary/10 dark:bg-primary/20' 
-                              : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                          }`}
-                          onClick={() => {
-                            setActiveIndex(flatIndex);
-                            executeActiveCommand();
-                          }}
-                          onMouseEnter={() => setActiveIndex(flatIndex)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              <span className={`mr-3 flex h-8 w-8 items-center justify-center rounded-lg ${
-                                isActive 
-                                  ? 'bg-primary text-white' 
-                                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                              }`}>
-                                {command.icon}
-                              </span>
-                              <span className="font-medium">{command.name}</span>
-                            </div>
-                            {command.shortcut && (
-                              <div className="hidden sm:flex items-center space-x-1">
-                                {command.shortcut.split(' ').map((key, i) => (
-                                  <React.Fragment key={i}>
-                                    {i > 0 && <span className="text-gray-400">+</span>}
-                                    <kbd className="inline-flex h-6 items-center rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-1.5 font-mono text-xs text-gray-500 dark:text-gray-400">
-                                      {key}
-                                    </kbd>
-                                  </React.Fragment>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              ))
-            )}
-          </div>
-          
-          <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-2 text-xs text-gray-500 dark:text-gray-400">
-            <div className="flex justify-between items-center">
-              <div>
-                Press <kbd className="inline-flex h-5 items-center rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-1 font-mono text-xs mx-1">?</kbd> anywhere to open this palette
-              </div>
-              <div>
-                <a 
-                  href="/keyboard-shortcuts" 
-                  className="text-primary hover:text-primary-dark transition-colors" 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    dispatch(closeCommandPalette());
-                    navigate('/keyboard-shortcuts');
-                  }}
-                >
-                  View all shortcuts
-                </a>
+            {/* Search input */}
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-4 top-3.5 h-5 w-5 text-neutral-400" />
+              <input
+                ref={inputRef}
+                type="text"
+                className="h-12 w-full border-0 bg-transparent pl-11 pr-4 text-neutral-900 placeholder:text-neutral-500 focus:ring-0 text-sm sm:text-base"
+                placeholder="Search commands..."
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setActiveIndex(0);
+                }}
+              />
+              <div className="absolute right-3 top-2.5">
+                <kbd className="rounded border border-neutral-200 bg-neutral-100 px-1.5 py-0.5 text-xs font-medium text-neutral-500">
+                  ESC
+                </kbd>
               </div>
             </div>
-          </div>
+            
+            {/* Category tabs */}
+            <div className="flex overflow-x-auto bg-neutral-50 px-2 text-sm font-medium text-neutral-900">
+              {categories.map((category) => {
+                const Icon = category.icon;
+                return (
+                  <button
+                    key={category.id}
+                    className={`flex items-center space-x-1 whitespace-nowrap border-b-2 px-3 py-2 transition-colors ${
+                      activeSection === category.id
+                        ? 'border-primary-500 text-primary-600'
+                        : 'border-transparent text-neutral-600 hover:text-neutral-900'
+                    }`}
+                    onClick={() => {
+                      setActiveSection(category.id);
+                      setActiveIndex(0);
+                    }}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{category.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            
+            {/* Command list */}
+            <ul
+              ref={commandListRef}
+              className="max-h-72 scroll-py-2 overflow-y-auto py-2"
+              role="listbox"
+            >
+              {filteredCommands.length === 0 ? (
+                <li className="px-4 py-8 text-center">
+                  <HelpCircle className="mx-auto h-6 w-6 text-neutral-400" />
+                  <p className="mt-1 text-sm text-neutral-500">
+                    No commands found. Try a different search.
+                  </p>
+                </li>
+              ) : (
+                filteredCommands.map((command, index) => {
+                  const Icon = command.icon;
+                  return (
+                    <li
+                      key={command.id}
+                      id={`command-${index}`}
+                      className={`cursor-pointer px-4 py-2 ${
+                        activeIndex === index
+                          ? 'bg-primary-50 text-primary-700'
+                          : 'text-neutral-700 hover:bg-neutral-50'
+                      }`}
+                      onClick={() => executeCommand(command)}
+                      onMouseEnter={() => setActiveIndex(index)}
+                      role="option"
+                      aria-selected={activeIndex === index}
+                    >
+                      <div className="flex items-center">
+                        <div className={`flex h-8 w-8 items-center justify-center rounded-md ${
+                          activeIndex === index
+                            ? 'bg-primary-100 text-primary-600'
+                            : 'bg-neutral-100 text-neutral-600'
+                        }`}>
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <span className="ml-3 flex-1 truncate">{command.name}</span>
+                        {command.shortcut && (
+                          <span className="ml-2 flex items-center text-xs text-neutral-500">
+                            {command.shortcut.split(' ').map((key, i) => (
+                              <span key={i} className="flex items-center">
+                                <kbd className="rounded border border-neutral-200 bg-neutral-100 px-1.5 py-0.5 font-medium text-neutral-500">
+                                  {key}
+                                </kbd>
+                                {i < command.shortcut.split(' ').length - 1 && (
+                                  <span className="mx-1">+</span>
+                                )}
+                              </span>
+                            ))}
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })
+              )}
+            </ul>
+            
+            {filteredCommands.length > 0 && (
+              <div className="flex flex-wrap items-center bg-neutral-50 px-4 py-2.5 text-xs text-neutral-500">
+                <span className="flex items-center">
+                  <ArrowRight className="mr-1 h-3.5 w-3.5" />
+                  <span>to select</span>
+                </span>
+                <span className="mx-2">•</span>
+                <span className="flex items-center">
+                  <kbd className="rounded border border-neutral-200 bg-neutral-100 px-1.5 py-0.5 font-medium text-neutral-500">
+                    ↑
+                  </kbd>
+                  <kbd className="ml-1 rounded border border-neutral-200 bg-neutral-100 px-1.5 py-0.5 font-medium text-neutral-500">
+                    ↓
+                  </kbd>
+                  <span className="ml-1">to navigate</span>
+                </span>
+                <span className="mx-2">•</span>
+                <span className="flex items-center">
+                  <kbd className="rounded border border-neutral-200 bg-neutral-100 px-1.5 py-0.5 font-medium text-neutral-500">
+                    Enter
+                  </kbd>
+                  <span className="ml-1">to confirm</span>
+                </span>
+                <span className="mx-2">•</span>
+                <span className="flex items-center">
+                  <kbd className="rounded border border-neutral-200 bg-neutral-100 px-1.5 py-0.5 font-medium text-neutral-500">
+                    Esc
+                  </kbd>
+                  <span className="ml-1">to close</span>
+                </span>
+              </div>
+            )}
+          </motion.div>
         </div>
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 };
 

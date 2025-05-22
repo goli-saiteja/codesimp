@@ -1,475 +1,641 @@
-// src/components/editor/RichTextEditor.jsx
-import React, { useState, useEffect, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { EditorContent, useEditor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Placeholder from '@tiptap/extension-placeholder';
-import Typography from '@tiptap/extension-typography';
-import Highlight from '@tiptap/extension-highlight';
-import TaskList from '@tiptap/extension-task-list';
-import TaskItem from '@tiptap/extension-task-item';
-import Link from '@tiptap/extension-link';
-import Image from '@tiptap/extension-image';
-import CodeBlock from '@tiptap/extension-code-block';
-import Collaboration from '@tiptap/extension-collaboration';
-import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
-import * as Y from 'yjs';
-import { WebrtcProvider } from 'y-webrtc';
-import { updateContent, markSaved } from '../../store/slices/editorSlice';
-import { 
-  Bold, Italic, Strikethrough, Code, List, ListOrdered, Quote, 
-  Link as LinkIcon, Image as ImageIcon, Heading1, Heading2, Heading3,
-  AlignLeft, AlignCenter, AlignRight, Undo, Redo, Check, 
-  Highlighter, Type, LayoutGrid, CodeSquare
+import React, { useState, useRef, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import CodeEditor from './CodeEditor';
+import {
+  Bold, Italic, Underline, List, ListOrdered, Link, Image, Code, Quote,
+  AlignLeft, AlignCenter, AlignRight, Heading1, Heading2, Heading3,
+  PlusCircle, XCircle, Upload, Eye, EyeOff, ChevronDown,
+  Type, Palette, Check, HelpCircle, ExternalLink
 } from 'lucide-react';
 
-// Custom CodeBlock extension with language selector
-const CustomCodeBlock = CodeBlock.extend({
-  addAttributes() {
-    return {
-      ...this.parent?.(),
-      language: {
-        default: 'javascript',
-        parseHTML: element => element.getAttribute('data-language'),
-        renderHTML: attributes => {
-          return {
-            'data-language': attributes.language,
-            class: `language-${attributes.language}`,
-          };
-        },
-      },
-    };
-  },
-});
-
-const RichTextEditor = ({ 
-  initialContent = '', 
-  placeholder = 'Begin writing your coding journey...', 
-  collaborationId = null,
+const RichTextEditor = ({
+  initialContent = '',
+  onChange,
+  placeholder = 'Write your article here...',
+  minHeight = '400px',
+  maxHeight = 'none',
   readOnly = false,
-  autofocus = true,
-  onChange = () => {},
-  onSave = () => {}
 }) => {
-  const dispatch = useDispatch();
-  const { fontSize, fontFamily, lineHeight } = useSelector(state => state.ui);
-  const { user } = useSelector(state => state.auth);
-  const [isLink, setIsLink] = useState(false);
-  const [linkUrl, setLinkUrl] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState(null);
-  const [collaborators, setCollaborators] = useState([]);
-  const [showCodeBlockOptions, setShowCodeBlockOptions] = useState(false);
+  const [content, setContent] = useState(initialContent);
+  const [showPreview, setShowPreview] = useState(false);
+  const [codeEditorOpen, setCodeEditorOpen] = useState(false);
   const [codeLanguage, setCodeLanguage] = useState('javascript');
-  const codeLanguages = [
-    'javascript', 'python', 'html', 'css', 'typescript', 
-    'jsx', 'tsx', 'java', 'c', 'cpp', 'php', 'go', 'ruby',
-    'rust', 'swift', 'kotlin', 'csharp', 'bash', 'sql', 'json'
+  const [codeContent, setCodeContent] = useState('// Enter your code here');
+  const [fontDropdownOpen, setFontDropdownOpen] = useState(false);
+  const [colorDropdownOpen, setColorDropdownOpen] = useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkText, setLinkText] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
+  const [selection, setSelection] = useState(null);
+  
+  const editorRef = useRef(null);
+  const dispatch = useDispatch();
+  
+  // Supported font families
+  const fontFamilies = [
+    { name: 'System UI', value: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' },
+    { name: 'Serif', value: 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif' },
+    { name: 'Mono', value: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' },
+    { name: 'Inter', value: '"Inter", sans-serif' },
+    { name: 'Plus Jakarta Sans', value: '"Plus Jakarta Sans", sans-serif' },
+    { name: 'Merriweather', value: '"Merriweather", serif' },
   ];
   
-  // Set up Yjs collaboration (if enabled)
-  const ydoc = useRef(null);
-  const provider = useRef(null);
+  // Supported text colors
+  const textColors = [
+    { name: 'Default', value: 'inherit' },
+    { name: 'Gray', value: '#64748b' },
+    { name: 'Red', value: '#ef4444' },
+    { name: 'Orange', value: '#f97316' },
+    { name: 'Yellow', value: '#eab308' },
+    { name: 'Green', value: '#22c55e' },
+    { name: 'Blue', value: '#3b82f6' },
+    { name: 'Purple', value: '#8b5cf6' },
+    { name: 'Pink', value: '#ec4899' },
+  ];
   
-  if (collaborationId && !ydoc.current) {
-    ydoc.current = new Y.Doc();
-    provider.current = new WebrtcProvider(`codesource-${collaborationId}`, ydoc.current, {
-      signaling: ['wss://signaling.codesource.com'],
-    });
-    
-    // Set up awareness (show who's editing)
-    if (user) {
-      provider.current.awareness.setLocalStateField('user', {
-        name: user.name,
-        color: user.color || '#' + Math.floor(Math.random()*16777215).toString(16),
-        avatar: user.avatar,
-      });
-    }
-    
-    // Track collaborators
-    provider.current.awareness.on('change', () => {
-      const states = Array.from(provider.current.awareness.getStates().entries())
-        .filter(([key, state]) => state.user)
-        .map(([key, state]) => state.user);
-      
-      setCollaborators(states);
-    });
-  }
-  
-  // Configure the editor
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        codeBlock: false,
-      }),
-      Placeholder.configure({
-        placeholder,
-      }),
-      Typography,
-      Highlight,
-      TaskList,
-      TaskItem.configure({
-        nested: true,
-      }),
-      Link.configure({
-        openOnClick: false,
-        linkOnPaste: true,
-        HTMLAttributes: {
-          class: 'text-primary hover:underline cursor-pointer',
-        },
-      }),
-      Image.configure({
-        allowBase64: true,
-        inline: true,
-      }),
-      CustomCodeBlock,
-      ...(collaborationId ? [
-        Collaboration.configure({
-          document: ydoc.current,
-        }),
-        CollaborationCursor.configure({
-          provider: provider.current,
-          user: user ? {
-            name: user.name,
-            color: user.color || '#' + Math.floor(Math.random()*16777215).toString(16),
-            avatar: user.avatar,
-          } : undefined,
-        }),
-      ] : []),
-    ],
-    content: initialContent,
-    autofocus,
-    editable: !readOnly,
-    onUpdate: ({ editor }) => {
-      const html = editor.getHTML();
-      onChange(html);
-      dispatch(updateContent(html));
-    },
-  });
-  
-  // Handle keyboard shortcuts
+  // Update the parent component when content changes
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      // Save: Ctrl+S or Cmd+S
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        saveContent();
-      }
-    };
-    
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
+    if (onChange) {
+      onChange(content);
+    }
+  }, [content, onChange]);
   
-  // Save content with debounce
-  const saveContent = async () => {
-    if (!editor || isSaving) return;
-    
-    try {
-      setIsSaving(true);
-      const content = editor.getHTML();
-      await onSave(content);
-      dispatch(markSaved());
-      setLastSaved(new Date());
-      setIsSaving(false);
-    } catch (error) {
-      console.error('Error saving content:', error);
-      setIsSaving(false);
+  // Save the current selection when a formatting button is clicked
+  const saveSelection = () => {
+    if (window.getSelection) {
+      const sel = window.getSelection();
+      if (sel.getRangeAt && sel.rangeCount) {
+        return sel.getRangeAt(0);
+      }
+    }
+    return null;
+  };
+  
+  // Restore the saved selection
+  const restoreSelection = (range) => {
+    if (range) {
+      if (window.getSelection) {
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
     }
   };
   
-  // Set initial content when it changes
-  useEffect(() => {
-    if (editor && initialContent && editor.getHTML() !== initialContent) {
-      editor.commands.setContent(initialContent);
-    }
-  }, [initialContent, editor]);
-  
-  if (!editor) {
-    return null;
-  }
-  
-  // Link handling
-  const setLink = () => {
-    if (!linkUrl) return;
+  // Execute a formatting command
+  const execCommand = (command, value = null) => {
+    if (!editorRef.current || readOnly) return;
     
-    // Check if URL has protocol, add http:// if missing
-    const url = linkUrl.includes('://') ? linkUrl : `http://${linkUrl}`;
+    // Focus the editor if it's not already focused
+    editorRef.current.focus();
     
-    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
-    setIsLink(false);
+    // Execute the command
+    document.execCommand(command, false, value);
+    
+    // Update the content state
+    setContent(editorRef.current.innerHTML);
+  };
+  
+  // Insert a link
+  const insertLink = () => {
+    if (!linkText || !linkUrl || readOnly) return;
+    
+    // Restore the saved selection
+    restoreSelection(selection);
+    
+    // Create the link
+    const linkHtml = `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
+    document.execCommand('insertHTML', false, linkHtml);
+    
+    // Update the content state
+    setContent(editorRef.current.innerHTML);
+    
+    // Close the dialog
+    setLinkDialogOpen(false);
+    setLinkText('');
     setLinkUrl('');
   };
   
-  const unsetLink = () => {
-    editor.chain().focus().extendMarkRange('link').unsetLink().run();
+  // Insert a code block
+  const insertCodeBlock = () => {
+    if (readOnly) return;
+    
+    // Create a formatted code block
+    const codeHtml = `
+      <pre class="code-block" data-language="${codeLanguage}">
+        <code>${codeContent.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code>
+      </pre>
+      <p><br></p>
+    `;
+    
+    // Insert the code block
+    document.execCommand('insertHTML', false, codeHtml);
+    
+    // Update the content state
+    setContent(editorRef.current.innerHTML);
+    
+    // Close the code editor
+    setCodeEditorOpen(false);
+    setCodeContent('// Enter your code here');
   };
   
-  // Image handling
-  const addImage = () => {
-    const url = window.prompt('Enter the image URL:');
-    if (url) {
-      editor.chain().focus().setImage({ src: url, alt: 'Image' }).run();
-    }
+  // Upload an image
+  const uploadImage = async (e) => {
+    if (readOnly) return;
+    
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // In a real app, you would upload the image to a server
+    // and get back a URL. For this example, we'll create a
+    // local object URL.
+    const imageUrl = URL.createObjectURL(file);
+    
+    // Insert the image
+    document.execCommand('insertImage', false, imageUrl);
+    
+    // Update the content state
+    setContent(editorRef.current.innerHTML);
   };
   
-  // Add code block with specific language
-  const addCodeBlock = (language) => {
-    editor.chain().focus().toggleCodeBlock({ language }).run();
-    setShowCodeBlockOptions(false);
+  // Handle content changes
+  const handleContentChange = (e) => {
+    setContent(e.target.innerHTML);
   };
   
-  // Helper to check if command is active
-  const isActive = (type, options = {}) => {
-    return editor.isActive(type, options);
+  // Apply a font family
+  const applyFontFamily = (fontFamily) => {
+    execCommand('fontName', fontFamily);
+    setFontDropdownOpen(false);
   };
   
-  // Button component for toolbar
-  const ToolbarButton = ({ icon, title, action, isActive = false, disabled = false }) => (
-    <button
-      onClick={action}
-      className={`p-2 rounded-md ${
-        isActive 
-          ? 'bg-primary/10 text-primary dark:bg-primary/20' 
-          : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
-      } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-      title={title}
-      disabled={disabled || readOnly}
-    >
-      {icon}
-    </button>
-  );
+  // Apply a text color
+  const applyTextColor = (color) => {
+    execCommand('foreColor', color);
+    setColorDropdownOpen(false);
+  };
+  
+  // Generate rendered HTML for preview
+  const getRenderedHTML = () => {
+    // In a real app, you would process the HTML to make it safe
+    // and enhance it with syntax highlighting, etc.
+    return content;
+  };
   
   return (
-    <div className="rich-text-editor flex flex-col border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+    <div className="rich-text-editor border border-neutral-200 rounded-lg shadow-soft bg-white overflow-hidden">
+      {/* Toolbar */}
       {!readOnly && (
-        <div className="editor-toolbar flex flex-wrap items-center gap-1 p-2 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+        <div className="rich-editor-toolbar border-b border-neutral-200 bg-neutral-50 flex-wrap">
           {/* Text formatting */}
-          <div className="flex items-center border-r border-gray-200 dark:border-gray-700 pr-2 mr-1">
-            <ToolbarButton
-              icon={<Bold size={16} />}
-              title="Bold"
-              action={() => editor.chain().focus().toggleBold().run()}
-              isActive={isActive('bold')}
-            />
-            <ToolbarButton
-              icon={<Italic size={16} />}
-              title="Italic"
-              action={() => editor.chain().focus().toggleItalic().run()}
-              isActive={isActive('italic')}
-            />
-            <ToolbarButton
-              icon={<Strikethrough size={16} />}
-              title="Strikethrough"
-              action={() => editor.chain().focus().toggleStrike().run()}
-              isActive={isActive('strike')}
-            />
-            <ToolbarButton
-              icon={<Highlighter size={16} />}
-              title="Highlight"
-              action={() => editor.chain().focus().toggleHighlight().run()}
-              isActive={isActive('highlight')}
-            />
-            <ToolbarButton
-              icon={<Code size={16} />}
-              title="Inline Code"
-              action={() => editor.chain().focus().toggleCode().run()}
-              isActive={isActive('code')}
-            />
-          </div>
+          <button
+            type="button"
+            className="p-1.5 text-neutral-700 hover:bg-neutral-200 rounded"
+            onClick={() => execCommand('bold')}
+            title="Bold (Ctrl+B)"
+          >
+            <Bold className="h-4 w-4" />
+          </button>
+          
+          <button
+            type="button"
+            className="p-1.5 text-neutral-700 hover:bg-neutral-200 rounded"
+            onClick={() => execCommand('italic')}
+            title="Italic (Ctrl+I)"
+          >
+            <Italic className="h-4 w-4" />
+          </button>
+          
+          <button
+            type="button"
+            className="p-1.5 text-neutral-700 hover:bg-neutral-200 rounded"
+            onClick={() => execCommand('underline')}
+            title="Underline (Ctrl+U)"
+          >
+            <Underline className="h-4 w-4" />
+          </button>
+          
+          <div className="mx-1 h-6 border-r border-neutral-300"></div>
           
           {/* Headings */}
-          <div className="flex items-center border-r border-gray-200 dark:border-gray-700 pr-2 mr-1">
-            <ToolbarButton
-              icon={<Heading1 size={16} />}
-              title="Heading 1"
-              action={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-              isActive={isActive('heading', { level: 1 })}
-            />
-            <ToolbarButton
-              icon={<Heading2 size={16} />}
-              title="Heading 2"
-              action={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-              isActive={isActive('heading', { level: 2 })}
-            />
-            <ToolbarButton
-              icon={<Heading3 size={16} />}
-              title="Heading 3"
-              action={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-              isActive={isActive('heading', { level: 3 })}
-            />
-          </div>
+          <button
+            type="button"
+            className="p-1.5 text-neutral-700 hover:bg-neutral-200 rounded"
+            onClick={() => execCommand('formatBlock', '<h1>')}
+            title="Heading 1"
+          >
+            <Heading1 className="h-4 w-4" />
+          </button>
           
-          {/* Lists and alignment */}
-          <div className="flex items-center border-r border-gray-200 dark:border-gray-700 pr-2 mr-1">
-            <ToolbarButton
-              icon={<List size={16} />}
-              title="Bullet List"
-              action={() => editor.chain().focus().toggleBulletList().run()}
-              isActive={isActive('bulletList')}
-            />
-            <ToolbarButton
-              icon={<ListOrdered size={16} />}
-              title="Ordered List"
-              action={() => editor.chain().focus().toggleOrderedList().run()}
-              isActive={isActive('orderedList')}
-            />
-            <ToolbarButton
-              icon={<Check size={16} />}
-              title="Task List"
-              action={() => editor.chain().focus().toggleTaskList().run()}
-              isActive={isActive('taskList')}
-            />
-            <ToolbarButton
-              icon={<Quote size={16} />}
-              title="Blockquote"
-              action={() => editor.chain().focus().toggleBlockquote().run()}
-              isActive={isActive('blockquote')}
-            />
-          </div>
+          <button
+            type="button"
+            className="p-1.5 text-neutral-700 hover:bg-neutral-200 rounded"
+            onClick={() => execCommand('formatBlock', '<h2>')}
+            title="Heading 2"
+          >
+            <Heading2 className="h-4 w-4" />
+          </button>
           
-          {/* Special blocks */}
-          <div className="flex items-center border-r border-gray-200 dark:border-gray-700 pr-2 mr-1">
-            <div className="relative">
-              <ToolbarButton
-                icon={<CodeSquare size={16} />}
-                title="Code Block"
-                action={() => setShowCodeBlockOptions(!showCodeBlockOptions)}
-                isActive={isActive('codeBlock')}
-              />
-              
-              {showCodeBlockOptions && (
-                <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10 p-2 w-48 max-h-64 overflow-y-auto">
-                  <div className="mb-2">
-                    <select
-                      className="w-full p-1 text-sm border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-900"
-                      value={codeLanguage}
-                      onChange={(e) => setCodeLanguage(e.target.value)}
+          <button
+            type="button"
+            className="p-1.5 text-neutral-700 hover:bg-neutral-200 rounded"
+            onClick={() => execCommand('formatBlock', '<h3>')}
+            title="Heading 3"
+          >
+            <Heading3 className="h-4 w-4" />
+          </button>
+          
+          <div className="mx-1 h-6 border-r border-neutral-300"></div>
+          
+          {/* Font family */}
+          <div className="relative">
+            <button
+              type="button"
+              className="flex items-center p-1.5 text-neutral-700 hover:bg-neutral-200 rounded"
+              onClick={() => setFontDropdownOpen(!fontDropdownOpen)}
+              title="Font Family"
+            >
+              <Type className="h-4 w-4" />
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </button>
+            
+            {fontDropdownOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-10" 
+                  onClick={() => setFontDropdownOpen(false)}
+                ></div>
+                <div className="absolute left-0 mt-1 w-48 bg-white border border-neutral-200 rounded-md shadow-lg z-20">
+                  {fontFamilies.map((font, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-neutral-100"
+                      style={{ fontFamily: font.value }}
+                      onClick={() => applyFontFamily(font.value)}
                     >
-                      {codeLanguages.map(lang => (
-                        <option key={lang} value={lang}>{lang}</option>
-                      ))}
-                    </select>
+                      {font.name}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+          
+          {/* Text color */}
+          <div className="relative">
+            <button
+              type="button"
+              className="flex items-center p-1.5 text-neutral-700 hover:bg-neutral-200 rounded"
+              onClick={() => setColorDropdownOpen(!colorDropdownOpen)}
+              title="Text Color"
+            >
+              <Palette className="h-4 w-4" />
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </button>
+            
+            {colorDropdownOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-10" 
+                  onClick={() => setColorDropdownOpen(false)}
+                ></div>
+                <div className="absolute left-0 mt-1 w-48 bg-white border border-neutral-200 rounded-md shadow-lg z-20">
+                  <div className="grid grid-cols-3 gap-1 p-2">
+                    {textColors.map((color, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        className={`w-full h-6 rounded-md border ${
+                          color.value === 'inherit' ? 'border-neutral-300' : 'border-transparent'
+                        }`}
+                        style={{ 
+                          backgroundColor: color.value === 'inherit' ? 'white' : color.value,
+                          color: color.value === 'inherit' ? 'black' : 'white',
+                        }}
+                        onClick={() => applyTextColor(color.value)}
+                        title={color.name}
+                      >
+                        {color.value === 'inherit' && <span className="text-xs">Default</span>}
+                      </button>
+                    ))}
                   </div>
-                  <button
-                    className="w-full text-left p-1 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                    onClick={() => addCodeBlock(codeLanguage)}
-                  >
-                    Insert {codeLanguage} block
-                  </button>
                 </div>
-              )}
-            </div>
-            
-            {/* Link handling */}
-            <div className="relative">
-              <ToolbarButton
-                icon={<LinkIcon size={16} />}
-                title={isActive('link') ? 'Edit Link' : 'Add Link'}
-                action={() => {
-                  if (isActive('link')) {
-                    unsetLink();
-                  } else {
-                    setIsLink(true);
-                  }
-                }}
-                isActive={isActive('link')}
-              />
-              
-              {isLink && (
-                <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10 p-2 flex">
-                  <input
-                    type="text"
-                    value={linkUrl}
-                    onChange={(e) => setLinkUrl(e.target.value)}
-                    className="w-64 p-1 text-sm border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-900"
-                    placeholder="https://example.com"
-                    onKeyDown={(e) => e.key === 'Enter' && setLink()}
-                    autoFocus
-                  />
-                  <button
-                    className="ml-1 px-2 bg-primary text-white rounded"
-                    onClick={setLink}
-                  >
-                    Add
-                  </button>
-                </div>
-              )}
-            </div>
-            
-            <ToolbarButton
-              icon={<ImageIcon size={16} />}
-              title="Add Image"
-              action={addImage}
-            />
+              </>
+            )}
           </div>
           
-          {/* Undo/Redo */}
-          <div className="flex items-center">
-            <ToolbarButton
-              icon={<Undo size={16} />}
-              title="Undo"
-              action={() => editor.chain().focus().undo().run()}
-              disabled={!editor.can().undo()}
-            />
-            <ToolbarButton
-              icon={<Redo size={16} />}
-              title="Redo"
-              action={() => editor.chain().focus().redo().run()}
-              disabled={!editor.can().redo()}
-            />
-          </div>
+          <div className="mx-1 h-6 border-r border-neutral-300"></div>
           
-          {/* Collaborators */}
-          {collaborationId && collaborators.length > 0 && (
-            <div className="ml-auto flex items-center space-x-1">
-              {collaborators.map((user, index) => (
-                <div
-                  key={index}
-                  className="h-8 w-8 rounded-full flex items-center justify-center text-white text-xs"
-                  style={{ backgroundColor: user.color }}
-                  title={user.name}
-                >
-                  {user.avatar ? (
-                    <img src={user.avatar} alt={user.name} className="h-8 w-8 rounded-full" />
-                  ) : (
-                    user.name.charAt(0).toUpperCase()
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Alignment */}
+          <button
+            type="button"
+            className="p-1.5 text-neutral-700 hover:bg-neutral-200 rounded"
+            onClick={() => execCommand('justifyLeft')}
+            title="Align Left"
+          >
+            <AlignLeft className="h-4 w-4" />
+          </button>
           
-          {/* Save status */}
-          <div className="ml-auto flex items-center">
-            {isSaving ? (
-              <span className="text-xs text-gray-500 dark:text-gray-400">Saving...</span>
-            ) : lastSaved ? (
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                Saved {new Intl.DateTimeFormat('en', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                }).format(lastSaved)}
-              </span>
-            ) : null}
-          </div>
+          <button
+            type="button"
+            className="p-1.5 text-neutral-700 hover:bg-neutral-200 rounded"
+            onClick={() => execCommand('justifyCenter')}
+            title="Align Center"
+          >
+            <AlignCenter className="h-4 w-4" />
+          </button>
+          
+          <button
+            type="button"
+            className="p-1.5 text-neutral-700 hover:bg-neutral-200 rounded"
+            onClick={() => execCommand('justifyRight')}
+            title="Align Right"
+          >
+            <AlignRight className="h-4 w-4" />
+          </button>
+          
+          <div className="mx-1 h-6 border-r border-neutral-300"></div>
+          
+          {/* Lists */}
+          <button
+            type="button"
+            className="p-1.5 text-neutral-700 hover:bg-neutral-200 rounded"
+            onClick={() => execCommand('insertUnorderedList')}
+            title="Bullet List"
+          >
+            <List className="h-4 w-4" />
+          </button>
+          
+          <button
+            type="button"
+            className="p-1.5 text-neutral-700 hover:bg-neutral-200 rounded"
+            onClick={() => execCommand('insertOrderedList')}
+            title="Numbered List"
+          >
+            <ListOrdered className="h-4 w-4" />
+          </button>
+          
+          <div className="mx-1 h-6 border-r border-neutral-300"></div>
+          
+          {/* Special elements */}
+          <button
+            type="button"
+            className="p-1.5 text-neutral-700 hover:bg-neutral-200 rounded"
+            onClick={() => {
+              setSelection(saveSelection());
+              setLinkDialogOpen(true);
+            }}
+            title="Insert Link"
+          >
+            <Link className="h-4 w-4" />
+          </button>
+          
+          <label className="p-1.5 text-neutral-700 hover:bg-neutral-200 rounded cursor-pointer">
+            <Image className="h-4 w-4" />
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={uploadImage}
+            />
+            <span className="sr-only">Upload Image</span>
+          </label>
+          
+          <button
+            type="button"
+            className="p-1.5 text-neutral-700 hover:bg-neutral-200 rounded"
+            onClick={() => setCodeEditorOpen(true)}
+            title="Insert Code Block"
+          >
+            <Code className="h-4 w-4" />
+          </button>
+          
+          <button
+            type="button"
+            className="p-1.5 text-neutral-700 hover:bg-neutral-200 rounded"
+            onClick={() => execCommand('formatBlock', '<blockquote>')}
+            title="Insert Quote"
+          >
+            <Quote className="h-4 w-4" />
+          </button>
+          
+          <div className="ml-auto"></div>
+          
+          {/* Preview toggle */}
+          <button
+            type="button"
+            className="flex items-center px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-200 rounded"
+            onClick={() => setShowPreview(!showPreview)}
+          >
+            {showPreview ? (
+              <>
+                <EyeOff className="h-4 w-4 mr-1.5" />
+                Edit
+              </>
+            ) : (
+              <>
+                <Eye className="h-4 w-4 mr-1.5" />
+                Preview
+              </>
+            )}
+          </button>
         </div>
       )}
       
+      {/* Editor content area */}
       <div 
-        className={`editor-content p-4 overflow-y-auto ${
-          readOnly ? 'prose dark:prose-invert max-w-none' : ''
-        }`}
-        style={{
-          fontSize: fontSize === 'small' ? '0.9rem' : fontSize === 'large' ? '1.1rem' : '1rem',
-          fontFamily: fontFamily.body,
-          lineHeight: lineHeight,
+        className="relative"
+        style={{ 
+          minHeight, 
+          maxHeight: maxHeight !== 'none' ? maxHeight : undefined 
         }}
       >
-        <EditorContent editor={editor} />
+        {/* Preview mode */}
+        {showPreview ? (
+          <div 
+            className="prose-custom p-4 overflow-auto"
+            style={{ 
+              minHeight, 
+              maxHeight: maxHeight !== 'none' ? maxHeight : undefined 
+            }}
+            dangerouslySetInnerHTML={{ __html: getRenderedHTML() }}
+          ></div>
+        ) : (
+          /* Edit mode */
+          <div 
+            ref={editorRef}
+            className="rich-editor-content"
+            contentEditable={!readOnly}
+            dangerouslySetInnerHTML={{ __html: content }}
+            onInput={handleContentChange}
+            style={{ 
+              minHeight, 
+              maxHeight: maxHeight !== 'none' ? maxHeight : undefined 
+            }}
+            placeholder={placeholder}
+          ></div>
+        )}
       </div>
+      
+      {/* Link dialog */}
+      {linkDialogOpen && (
+        <>
+          <div 
+            className="fixed inset-0 z-40 bg-black/50" 
+            onClick={() => setLinkDialogOpen(false)}
+          ></div>
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-lg w-full max-w-md">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200">
+                <h3 className="text-lg font-semibold text-neutral-900">Insert Link</h3>
+                <button
+                  type="button"
+                  className="text-neutral-500 hover:text-neutral-700"
+                  onClick={() => setLinkDialogOpen(false)}
+                >
+                  <XCircle className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="p-4">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Link Text
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={linkText}
+                    onChange={(e) => setLinkText(e.target.value)}
+                    placeholder="Enter link text"
+                  />
+                </div>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    URL
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={linkUrl}
+                    onChange={(e) => setLinkUrl(e.target.value)}
+                    placeholder="https://example.com"
+                  />
+                </div>
+                
+                <div className="flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setLinkDialogOpen(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={insertLink}
+                    disabled={!linkText || !linkUrl}
+                  >
+                    Insert Link
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+      
+      {/* Code editor dialog */}
+      {codeEditorOpen && (
+        <>
+          <div 
+            className="fixed inset-0 z-40 bg-black/50" 
+            onClick={() => setCodeEditorOpen(false)}
+          ></div>
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200">
+                <h3 className="text-lg font-semibold text-neutral-900">Insert Code Block</h3>
+                <button
+                  type="button"
+                  className="text-neutral-500 hover:text-neutral-700"
+                  onClick={() => setCodeEditorOpen(false)}
+                >
+                  <XCircle className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="p-4">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Language
+                  </label>
+                  <select
+                    className="form-select"
+                    value={codeLanguage}
+                    onChange={(e) => setCodeLanguage(e.target.value)}
+                  >
+                    <option value="javascript">JavaScript</option>
+                    <option value="jsx">JSX</option>
+                    <option value="typescript">TypeScript</option>
+                    <option value="tsx">TSX</option>
+                    <option value="html">HTML</option>
+                    <option value="css">CSS</option>
+                    <option value="scss">SCSS</option>
+                    <option value="python">Python</option>
+                    <option value="java">Java</option>
+                    <option value="go">Go</option>
+                    <option value="rust">Rust</option>
+                    <option value="c">C</option>
+                    <option value="cpp">C++</option>
+                    <option value="csharp">C#</option>
+                    <option value="php">PHP</option>
+                    <option value="ruby">Ruby</option>
+                    <option value="swift">Swift</option>
+                    <option value="kotlin">Kotlin</option>
+                    <option value="sql">SQL</option>
+                    <option value="bash">Bash</option>
+                    <option value="json">JSON</option>
+                    <option value="markdown">Markdown</option>
+                    <option value="yaml">YAML</option>
+                  </select>
+                </div>
+                
+                <div className="mb-4 border border-neutral-200 rounded-lg overflow-hidden">
+                  <CodeEditor
+                    initialCode={codeContent}
+                    language={codeLanguage}
+                    onChange={(newCode) => setCodeContent(newCode)}
+                    minHeight="200px"
+                    theme="dark"
+                  />
+                </div>
+                
+                <div className="flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setCodeEditorOpen(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={insertCodeBlock}
+                  >
+                    Insert Code Block
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
